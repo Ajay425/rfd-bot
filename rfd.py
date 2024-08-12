@@ -4,9 +4,10 @@ import requests
 source = requests.get('https://forums.redflagdeals.com/hot-deals-f9/').text
 
 soup = BeautifulSoup(source, 'lxml')
-print(soup.prettify())
+#print(soup.prettify())
 
-
+match = soup.find('a', class_ = 'topic_title_link')
+print(match)
 
 
 #print(soup.prettify()) this will make the code look prettier and easy to understand
