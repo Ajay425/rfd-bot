@@ -30,15 +30,6 @@ def get_deals():
             sort_deals = datetime.strptime(clean_post_time, '%b %d, %Y %I:%M %p')
             deals.append((deal_title, deal_link, deal_post_time, sort_deals))
         deals.sort(key=lambda x: x[3], reverse=True)
-
-        print("Sorted Deals!")
-        for deal in deals:
-            print(f"Title: {deal[0]}")
-            print(f"Link: {deal[1]}")
-            print(f"Posted On: {deal[2]}")
-            print("-" * 40)
-            
-
         return deals
     except requests.exceptions.RequestException as e:
         print(f"Error fetching deals {e}")
@@ -52,13 +43,13 @@ def check_new_deals(previous_deals):
 
             for deal in current_deals:
                 link = deal[1]
-                if deal not in current_deals:
+                if link not in current_deals:
                     new_deals.append(deal)
         
             if new_deals:
-                print("No new deals Posted!")
-                for title, link, post_time in new_deals:
-                    print(f"Title: {title}\nLink: {link}\n Time: {post_time}")
+                print("New deals Posted!")
+                for title, link, post_time, _ in new_deals:
+                    print(f"Title: {title}\nLink: {link}\nTime: {post_time}")
                     print("-"*40)
 
                 previous_deals.update({deal[1]: (deal[0], deal[2]) for deal in new_deals})          
@@ -68,7 +59,7 @@ def check_new_deals(previous_deals):
         except Exception as e:
             print(f"Error getting new deals {e}")
             
-        time.sleep(300)
+        time.sleep(120)
 if __name__ == "__main__":
     try:
         initial_deals = get_deals()
@@ -77,37 +68,6 @@ if __name__ == "__main__":
         check_new_deals(previous_deals)
     except Exception as e:
         print(f"Critical error during initialization: {e}")           
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
