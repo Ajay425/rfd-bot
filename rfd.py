@@ -1,6 +1,8 @@
 from bs4 import BeautifulSoup
 import requests
 import time
+from datetime import datetime
+import re
 
 # thoughts to get only recent deals posted.
 # sort the deals by time posted. If the latest deal time posted is greater than the most current deal then send a discord message of the most recent deal
@@ -11,9 +13,10 @@ def get_deals():
         #Fetch the HTML content from the RedFlagDeals hot deals forum
         source = requests.get('https://forums.redflagdeals.com/hot-deals-f9/').text
 
+
         #Parse the HTML content using BeautifulSoup with the 'lxml' parser
         soup = BeautifulSoup(source, 'lxml')
-        deals = {}
+        deals = []
 
         title_links = soup.find_all('a', class_ = 'topic_title_link')
 
@@ -23,17 +26,23 @@ def get_deals():
             deal_link = f"https://forums.redflagdeals.com{title['href']}"
             deal_title = title.text.strip()
             deal_post_time = post_time.text.strip()
+            clean_post_time = re.sub(r'(\d+)(th|st|nd|rd)', r'\1', deal_post_time)
+            sort_deals = datetime.strptime(clean_post_time, '%b %d, %Y %I:%M %p')
+            deals.append((deal_title, deal_link, deal_post_time, sort_deals))
+        deals.sort(key=lambda x: x[3], reverse=True)
 
-            print(f"Link to Deal: {deal_link}")
-            print(f"Deal Title: {deal_title}")
-            print(f"Posted On: {deal_post_time}")
-            print("-"*40)
-
-            deals[deal_link] = (deal_title, deal_post_time)
+        print("Sorted Deals!")
+        for deal in deals:
+            print(f"Title: {deal[0]}")
+            print(f"Link: {deal[1]}")
+            print(f"Posted On: {deal[2]}")
+            print("-" * 40)
+            
 
         return deals
     except requests.exceptions.RequestException as e:
         print(f"Error fetching deals {e}")
+        return []
 
 def check_new_deals(previous_deals):
     while True:
@@ -42,6 +51,7 @@ def check_new_deals(previous_deals):
             new_deals = []
 
             for deal in current_deals:
+                link = deal[1]
                 if deal not in current_deals:
                     new_deals.append(deal)
         
@@ -51,19 +61,19 @@ def check_new_deals(previous_deals):
                     print(f"Title: {title}\nLink: {link}\n Time: {post_time}")
                     print("-"*40)
 
-                    previous_deals.update({link: (title, post_time) for link, (title, post_time) in new_deals})           
+                previous_deals.update({deal[1]: (deal[0], deal[2]) for deal in new_deals})          
             else:
                 print(f"No new deals at this time!")
+        
         except Exception as e:
-                print(f"Error getting new deals {e}")
+            print(f"Error getting new deals {e}")
             
         time.sleep(300)
 if __name__ == "__main__":
     try:
         initial_deals = get_deals()
-        previous_deals = initial_deals
+        previous_deals = {deal[1]: (deal[0], deal[2]) for deal in initial_deals} 
         print(f"Starting to monitor deals. Found {len(previous_deals)} deals initially.")
-
         check_new_deals(previous_deals)
     except Exception as e:
         print(f"Critical error during initialization: {e}")           
