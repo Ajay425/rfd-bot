@@ -3,36 +3,36 @@ import requests
 import time
 from datetime import datetime
 import re
-
-# thoughts to get only recent deals posted.
-# sort the deals by time posted. If the latest deal time posted is greater than the most current deal then send a discord message of the most recent deal
-
+import discord
 
 def get_deals():
     try:
-        #Fetch the HTML content from the RedFlagDeals hot deals forum
         source = requests.get('https://forums.redflagdeals.com/hot-deals-f9/').text
 
-
-        #Parse the HTML content using BeautifulSoup with the 'lxml' parser
+        # Parse the HTML content using BeautifulSoup with the 'lxml' parser
         soup = BeautifulSoup(source, 'lxml')
         deals = []
 
-        title_links = soup.find_all('a', class_ = 'topic_title_link')
+        title_links = soup.find_all('a', class_='topic_title_link')
+        post_times = soup.find_all('span', class_='first-post-time')
 
-        post_times = soup.find_all('span', class_ = 'first-post-time')
-
-        for title, post_time in zip(title_links, post_times): #let us use zip to pair each post with the first time
+        for title, post_time in zip(title_links, post_times):
             deal_link = f"https://forums.redflagdeals.com{title['href']}"
             deal_title = title.text.strip()
             deal_post_time = post_time.text.strip()
+
+            # Clean and convert post time to a datetime object for sorting
             clean_post_time = re.sub(r'(\d+)(th|st|nd|rd)', r'\1', deal_post_time)
-            sort_deals = datetime.strptime(clean_post_time, '%b %d, %Y %I:%M %p')
-            deals.append((deal_title, deal_link, deal_post_time, sort_deals))
+            sort_deal_time = datetime.strptime(clean_post_time, '%b %d, %Y %I:%M %p')
+
+            deals.append((deal_title, deal_link, deal_post_time, sort_deal_time))
+
+        # Sort the deals by the post time in descending order (most recent first)
         deals.sort(key=lambda x: x[3], reverse=True)
+
         return deals
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching deals {e}")
+        print(f"Error fetching deals: {e}")
         return []
 
 def check_new_deals(previous_deals):
@@ -43,31 +43,33 @@ def check_new_deals(previous_deals):
 
             for deal in current_deals:
                 link = deal[1]
-                if link not in current_deals:
+                if link not in previous_deals:
                     new_deals.append(deal)
-        
-            if new_deals:
-                print("New deals Posted!")
-                for title, link, post_time, _ in new_deals:
-                    print(f"Title: {title}\nLink: {link}\nTime: {post_time}")
-                    print("-"*40)
 
-                previous_deals.update({deal[1]: (deal[0], deal[2]) for deal in new_deals})          
+            if new_deals:
+                print("New deals posted!")
+                for title, link, post_time, _ in new_deals: 
+                    print(f"Title: {title}\nLink: {link}\nPosted On: {post_time}")
+                    print("-" * 40)
+
+                # Update previous deals dictionary with the new deals
+                previous_deals.update({deal[1]: (deal[0], deal[2]) for deal in new_deals})
             else:
-                print(f"No new deals at this time!")
-        
+                print("No new deals at this time.")
+
         except Exception as e:
-            print(f"Error getting new deals {e}")
+            print(f"Error getting new deals: {e}")
             
-        time.sleep(120)
+        time.sleep(120)  
+
 if __name__ == "__main__":
     try:
         initial_deals = get_deals()
-        previous_deals = {deal[1]: (deal[0], deal[2]) for deal in initial_deals} 
+        previous_deals = {deal[1]: (deal[0], deal[2]) for deal in initial_deals}
         print(f"Starting to monitor deals. Found {len(previous_deals)} deals initially.")
         check_new_deals(previous_deals)
     except Exception as e:
-        print(f"Critical error during initialization: {e}")           
+        print(f"Critical error during initialization: {e}")
 
 
 
