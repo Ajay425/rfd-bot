@@ -4,6 +4,17 @@ import time
 from datetime import datetime
 import re
 import discord
+from discord.ext import tasks
+
+token = ''
+channel_ID = 1
+
+intents = discord.Intents.default()
+client = discord.Client(intents=intents)
+
+async def send_discord_message(channel, content):
+        await channel.send(content)
+
 
 def get_deals():
     try:
@@ -60,7 +71,7 @@ def check_new_deals(previous_deals):
         except Exception as e:
             print(f"Error getting new deals: {e}")
             
-        time.sleep(120)  
+        time.sleep(60)  
 
 if __name__ == "__main__":
     try:
