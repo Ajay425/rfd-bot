@@ -11,8 +11,8 @@ This script monitors the RedFlagDeals hot deals forum and detects new deals as t
 
 ## Prerequisites
 
-- **Python 3.x** is required to run this script.
-- The following Python packages are required:
+- **Python 3.xx** is required to run this script.
+- The following Python packages are required in order  to run the script:
   - `requests`
   - `beautifulsoup4`
 
